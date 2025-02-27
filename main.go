@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"os"
 	"pokedexcli/pokeapi"
 	"strings"
@@ -49,6 +50,21 @@ func getCommands() map[string]cliCommand {
 			Name:        "explore",
 			Description: "Explore an area of the map",
 			Callback:    commandExplore,
+		},
+		"catch": {
+			Name:        "catch",
+			Description: "Attempt to catch a pokemon",
+			Callback:    commandCatch,
+		},
+		"inspect": {
+			Name:        "inspect",
+			Description: "Inspect Pokemon displaying name, height, wieght, stats and type(s)",
+			Callback:    commandInspect,
+		},
+		"pokedex": {
+			Name:        "pokedex",
+			Description: "Display a list of all Pokemon you have in your Pokedex",
+			Callback:    commandPokedex,
 		},
 	}
 }
@@ -154,7 +170,6 @@ func commandMapb(c *config, args []string) error {
 }
 
 func commandExplore(c *config, args []string) error {
-
 	locationAreaName := args[0]
 	fmt.Printf("Exploring %s...\n", locationAreaName)
 
@@ -168,5 +183,56 @@ func commandExplore(c *config, args []string) error {
 		fmt.Printf(" - %s\n", pokemon.Pokemon.Name)
 	}
 
+	return nil
+}
+
+func commandCatch(c *config, args []string) error {
+	pokemonName := args[0]
+	fmt.Printf("Throwing a Pokeball at %s...\n", pokemonName)
+
+	pokemon, err := client.AttemptCapture(pokemonName)
+	if err != nil {
+		return err
+	}
+
+	randNum := rand.Intn(pokemon.BaseExperience + 1)
+	threshold := pokemon.BaseExperience / 3
+
+	if randNum <= threshold {
+		client.Pokedex[pokemonName] = pokemon
+		fmt.Printf("%s was caught!\n", pokemonName)
+	} else {
+		fmt.Printf("%s escaped!\n", pokemonName)
+	}
+	return nil
+}
+
+func commandInspect(c *config, args []string) error {
+	pokemonName := args[0]
+	pokemon, ok := client.Pokedex[pokemonName]
+	if ok {
+		fmt.Printf("Name: %s\n", pokemon.Name)
+		fmt.Printf("Height: %d\n", pokemon.Height)
+		fmt.Printf("Weight: %d\n", pokemon.Weight)
+		fmt.Println("Stats:")
+		for _, stat := range pokemon.Stats {
+			fmt.Printf(" - %s: %d\n", stat.Stat.Name, stat.BaseStat)
+		}
+		fmt.Println("Types:")
+		for _, t := range pokemon.Types {
+			fmt.Printf(" - %s\n", t.Type.Name)
+		}
+	} else {
+		fmt.Println("Pokemon not found in the Pokedex!")
+	}
+	return nil
+}
+
+func commandPokedex(c *config, args []string) error {
+	fmt.Println("Your Pokedex:")
+	for _, pokemon := range client.Pokedex {
+
+		fmt.Printf(" - %s\n", pokemon.Name)
+	}
 	return nil
 }
