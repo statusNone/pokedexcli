@@ -16,7 +16,7 @@ type config struct {
 type cliCommand struct {
 	Name        string
 	Description string
-	Callback    func(c *config, args ...string) error
+	Callback    func(c *config, args []string) error
 }
 
 var cfg *config
@@ -77,7 +77,7 @@ func main() {
 
 		if len(words) > 0 {
 			if command, ok := commands[words[0]]; ok {
-				err := command.Callback(cfg)
+				err := command.Callback(cfg, words[1:])
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -99,7 +99,7 @@ func cleanInput(text string) []string {
 	return words
 }
 
-func commandHelp(c *config, args ...string) error {
+func commandHelp(c *config, args []string) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
 	fmt.Println()
@@ -110,13 +110,13 @@ func commandHelp(c *config, args ...string) error {
 	return nil
 }
 
-func commandExit(c *config, args ...string) error {
+func commandExit(c *config, args []string) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandMap(c *config, args ...string) error {
+func commandMap(c *config, args []string) error {
 	resp, err := client.ListLocationAreas(c.Next)
 	if err != nil {
 		return err
@@ -132,7 +132,7 @@ func commandMap(c *config, args ...string) error {
 	return nil
 }
 
-func commandMapb(c *config, args ...string) error {
+func commandMapb(c *config, args []string) error {
 	if c.Previous == nil {
 		fmt.Println("You're on the first page")
 		return nil
@@ -153,7 +153,20 @@ func commandMapb(c *config, args ...string) error {
 	return nil
 }
 
-func commandExplore(c *config, args ...string) error {
+func commandExplore(c *config, args []string) error {
+
+	locationAreaName := args[0]
+	fmt.Printf("Exploring %s...\n", locationAreaName)
+
+	locationArea, err := client.GetLocationArea(locationAreaName)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Found Pokemon:")
+	for _, pokemon := range locationArea.PokemonEncounters {
+		fmt.Printf(" - %s\n", pokemon.Pokemon.Name)
+	}
 
 	return nil
 }
